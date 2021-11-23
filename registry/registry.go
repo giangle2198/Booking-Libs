@@ -103,7 +103,7 @@ func buildUsecases() error {
 	if UsecasesBuilder == nil {
 		UsecasesBuilder = defaultBuilder
 	}
-	defs := HelpersBuilder()
+	defs := UsecasesBuilder()
 	err := builder.Add(defs...)
 	if err != nil {
 		return err
