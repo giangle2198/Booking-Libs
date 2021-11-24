@@ -1,9 +1,6 @@
 package log
 
 import (
-	"encoding/json"
-	"os"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -17,36 +14,9 @@ type logger struct {
 	L *zap.Logger
 }
 
-func Object(key string, value interface{}) zapcore.Field {
-	marshalByte, err := json.Marshal(value)
-	if err != nil {
-		zap.S().Panic(err)
-		return zapcore.Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: value}
-	}
-
-	masked := GetJSONMaskLogging().MaskJSON(string(marshalByte))
-	return zapcore.Field{Key: key, Type: zapcore.StringType, Interface: masked, String: masked}
-}
-
-func configLogLevel(defaultEnv string) zapcore.Level {
-	env := os.Getenv("ENVIROMENT")
-
-	if env == "" {
-		env = "P"
-	}
-
-	level := zapcore.ErrorLevel
-	switch env {
-	case "D", "d", "dev", "DEV":
-		level = zapcore.DebugLevel
-	case "P", "p", "PROD", "prod":
-		level = zapcore.WarnLevel
-	}
-	return level
-}
-
 func InitZap(app, env string, maskFields map[string]string) error {
-	logLevel := configLogLevel(env)
+	logLevel := zapcore.InfoLevel
+
 	encoderConfig := zapcore.EncoderConfig{
 		MessageKey: "message",
 
@@ -63,11 +33,6 @@ func InitZap(app, env string, maskFields map[string]string) error {
 		EncodeName: zapcore.FullNameEncoder,
 	}
 
-	InitJSONMaskLogging(maskFields)
-	zap.RegisterEncoder("custom-json", func(cfg zapcore.EncoderConfig) (zapcore.Encoder, error) {
-		return NewJSONEncoder(cfg), nil
-	})
-
 	cfg := zap.Config{
 		Encoding:         "custom-json",
 		Level:            zap.NewAtomicLevelAt(logLevel),
@@ -75,6 +40,10 @@ func InitZap(app, env string, maskFields map[string]string) error {
 		ErrorOutputPaths: []string{"stderr"},
 		EncoderConfig:    encoderConfig,
 	}
+
+	zap.RegisterEncoder("custom-json", func(cfg zapcore.EncoderConfig) (zapcore.Encoder, error) {
+		return zapcore.NewConsoleEncoder(cfg), nil
+	})
 
 	l, err := cfg.Build()
 	if err != nil {
