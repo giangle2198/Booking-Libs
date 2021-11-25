@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	_ "github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +42,7 @@ func (h *dbHelper) RollBack(tx *sql.Tx) error {
 	return tx.Rollback()
 }
 func initMysql(host, username, password, database string, port int) (*sql.DB, error) {
-	connectionStr := fmt.Sprintf("%v/%v@tcp(%v:%v)/%v", username, password, host, port, database)
+	connectionStr := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v", username, password, host, port, database)
 
 	db, err := sql.Open("mysql", connectionStr)
 	if err != nil {
